@@ -63,7 +63,7 @@ if playback:
 # Generate sheet music
 if sheet_music:
     bassline_pond = lilypond.from_Track(t)
-    lilypond.to_png(bassline_pond, "best individual")
+    lilypond.to_png(bassline_pond, "score")
 
 # Write to tab if in correct range
 if tablature:
