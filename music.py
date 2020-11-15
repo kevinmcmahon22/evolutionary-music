@@ -14,15 +14,20 @@ from mingus.containers import Track, Bar
 from mingus.containers.instrument import MidiInstrument, Piano
 import mingus.midi.midi_file_out as mfo
 from midi2audio import FluidSynth
+from mingus.midi import fluidsynth as fs
 import mingus.extra.lilypond as lilypond
 import mingus.extra.tablature as tab
 
+import os
+
 # Determine what output to produce
-midi_file = True
+midi_file = False
 playback = True
-sheet_music = True
+wav = False
+sheet_music = False
 tablature = False
 
+bpm = 200
 
 # Create instrument
 i = MidiInstrument("Jazz Bass")
@@ -51,20 +56,28 @@ for i in range(2):
 # OUTPUT
 # 
 
+filename = 'new'
+midi_filename = filename + '.mid'
+soundfont = 'FluidR3_GM.sf2'
+
 # Write to midi file
 if midi_file:
-    mfo.write_Track("new.mid", t, bpm=220, repeat=0, verbose=True)
+    mfo.write_Track(midi_filename, t, bpm=bpm, repeat=0, verbose=True)
 
 # Play midi file
 if playback:
-    fs = FluidSynth('FluidR3_GM.sf2')
-    fs.play_midi('new.mid')
+    fs.init(soundfont)
+    fs.play_Track(t, 1, bpm)
+
+# Make wav file from .mid
+if wav:
+    os.system(f'fluidsynth -F {filename}.wav {soundfont} {midi_filename}')
 
 # Generate sheet music
 if sheet_music:
     bassline_pond = lilypond.from_Track(t)
-    lilypond.to_png(bassline_pond, "score")
+    lilypond.to_png(bassline_pond, filename)
 
-# Write to tab if in correct range
+# Write to ASCII tab if notes in guitar range
 if tablature:
     print(tab.from_Track(t))
