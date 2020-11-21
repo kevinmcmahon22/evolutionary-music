@@ -4,6 +4,8 @@ import pygraphviz as pgv
 import operator
 import random
 
+import functionset as func
+
 
 
 def evaluate(individual, pset):
@@ -11,19 +13,13 @@ def evaluate(individual, pset):
     num = gp.compile(individual, pset)
     return num,
 
-def get_function_set():
-    return [(max, 2), (operator.add, 2), (operator.mul, 2)]
+def function_set():
+    return func.getFunctionSet()
 
-def get_terminal_set():
-    return [3, 2]
+def terminal_set():
+    return func.getTerminalSet()
 
-def init_population(toolbox, pop_size):
-    population = []
-    for n in range(pop_size):
-        population.append(toolbox.individual())
-    return population
-
-def print_tree(expr):
+def print_tree(expr, filename):
     nodes, edges, labels = gp.graph(expr)
 
     g = pgv.AGraph()
@@ -35,7 +31,7 @@ def print_tree(expr):
         n = g.get_node(i)
         n.attr["label"] = labels[i]
     
-    g.draw("tree.png")
+    g.draw(f'{filename}.png')
     
 def print_plot(best_inds):
     generations = [i+1 for i in range(len(best_inds))]
@@ -49,10 +45,10 @@ def print_plot(best_inds):
 pset = gp.PrimitiveSet("main", 0)
 
 # Add function and terminal sets
-for func in get_function_set():
-    pset.addPrimitive(func[0], func[1])
-for term in get_terminal_set():
-    pset.addTerminal(term)
+for function in function_set():
+    pset.addPrimitive(function[0], function[1])
+for terminal in terminal_set():
+    pset.addTerminal(terminal)
 
 
 # Declare fitness and individuals
@@ -61,51 +57,67 @@ creator.create("Individual", gp.PrimitiveTree, fitness=creator.FitnessMax, pset=
 
 
 # Koza tableau variables for GP run
-pop_size = 10
+pop_size = 20
 num_parents = 4
 tourn_select_size = 3
 p_mut = 0.01
-p_xover = 0.5
-num_gens = 100
+p_xover = 1
+num_gens = 40
 tourn_size = 3
 min_height = 3
 max_height = 5
-max_tree_height = 17
+max_tree_height = 7
+max_num_nodes = 50
 
 best_sols = []
 
 # Register operators
 toolbox = base.Toolbox()
-toolbox.register("generateGp", gp.genHalfAndHalf, pset=pset, min_=min_height, max_=max_height)
+toolbox.register("generateGp", gp.genFull, pset=pset, min_=min_height, max_=max_height)
 toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.generateGp)
-toolbox.register("mate", gp.cxOnePointLeafBiased, termpb=0.1) # 0.1 prob mutate leaf node
+
+# Use bag population, no inherent ordering
+toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+
+# Create Hall of Fame
+toolbox.register("goat", tools.HallOfFame)
+
+# Methods
+toolbox.register("mate", gp.cxOnePoint) # 0.1 prob mutate leaf node
 toolbox.register("mutate", gp.mutNodeReplacement, pset=pset)
 toolbox.register("parentSelect", tools.selTournament, tournsize=tourn_select_size)
+# toolbox.register("parentSelect", tools.selRoulette)
 toolbox.register("childSelect", tools.selBest, k=pop_size)
 toolbox.register("evaluate", evaluate)
 
-# toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=max_tree_height))
-# toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter("height"), max_value=max_tree_height))
-# toolbox.decorate("mate", gp.staticLimit(len, max_value=max_tree_height))
-# toolbox.decorate("mutate", gp.staticLimit(len, max_value=max_tree_height))
+# Bloat control
+toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter('height'), max_value=max_tree_height))
+toolbox.decorate("mutate", gp.staticLimit(key=operator.attrgetter('height'), max_value=max_tree_height))
+# toolbox.decorate("mate", gp.staticLimit(len, max_value=max_num_nodes))
+# toolbox.decorate("mutate", gp.staticLimit(len, max_value=max_num_nodes))
+
+
 
 # Initialize population
-population = init_population(toolbox, pop_size)
+population = toolbox.population(n=pop_size)
+
 
 for cur_gen in range(num_gens):
      
-    
-    offspring = [toolbox.clone(ind) for ind in population]
-    
     # Parent selection
-    parents = toolbox.parentSelect(offspring, num_parents)     
+    parents = toolbox.parentSelect(population, num_parents)
     
     # Crossover
     for i in range(1, len(parents), 2):
         if random.random() < p_xover:
-            offspring[i-1], offspring[i] = toolbox.mate(offspring[i-1], parents[i])
-            del offspring[i-1].fitness.values
-            del offspring[i].fitness.values
+            # print(parents[i-1])
+            # print(parents[i])
+            # print_tree(parents[i-1], 'p1')
+            # print_tree(parents[i], 'p2')
+            tup = toolbox.mate(parents[i-1], parents[i])
+            population.extend([tup[0], tup[1]])
+            # del parents[i-1].fitness.values
+            # del parents[i].fitness.values
     
     # for child1, child2 in zip(population[::2], population[1::2]):
     #     if random.random() < p_xover:
@@ -117,7 +129,7 @@ for cur_gen in range(num_gens):
     #         del child2.fitness.values
         
     # Mutation
-    for mutant in offspring:
+    for mutant in population:
         if random.random() < p_mut:
             toolbox.mutate(mutant)
             del mutant.fitness.values
@@ -130,6 +142,11 @@ for cur_gen in range(num_gens):
         
     # Survivor selection
     population = toolbox.childSelect(population)
+    
+    # Hall of fame
+    toolbox.goat(population)
+    
+    
 
     # Add best solution to list to print
     best_ind = tools.selBest(population, 1)[0]
@@ -139,5 +156,7 @@ for cur_gen in range(num_gens):
 
 print_plot(best_sols)
 
-goat = tools.selBest(population, 1)[0]
-print_tree(goat)
+print(toolbox.goat)
+
+# goat = tools.selBest(population, 1)[0]
+# print_tree(goat, 'goat')
