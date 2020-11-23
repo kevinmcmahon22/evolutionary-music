@@ -16,6 +16,7 @@ from mingus.midi import fluidsynth as fs
 
 import mingus.core.progressions as progressions
 import mingus.core.notes as notes
+import mingus.core.scales as scales
 import mingus.midi.midi_file_out as mfo
 import mingus.extra.lilypond as lilypond
 import mingus.extra.tablature as tab
@@ -57,6 +58,20 @@ def get_int_chords():
 BLUES_PROG_INT = get_int_chords()
 
 
+# Variables for evaluating fitness
+# Rated from 1-5 on how important they are
+
+NON_REPEATED_NOTES = 3
+
+NOTE_IN_CHORD = 2
+
+NOTE_IN_SCALE = 1
+
+LEADING_TONE = 2
+
+ROOT = 5
+
+
 def evaluate_baseline(individual):
     
     fitness = 0
@@ -73,35 +88,37 @@ def evaluate_baseline(individual):
         
         # 1st note: root
         if beat_num == 0:
-            
-            # check if note is in chord            
+
+            # reward if note is in chord
             chord = BLUES_PROG_INT[bar_num]
             if current_note % 12 in chord:
                 
-                fitness += 10
-            
+                fitness += NOTE_IN_CHORD   
+                
             # bonus if note is root of chord
-            root = BLUES_PROG_INT[bar_num][0]
+            root = chord[0]
             if current_note % 12 == root:
                 
-                fitness += 50
-                
+                fitness += ROOT
         
         # 2nd note: any note of chord/scale
         elif beat_num == 1:
+            
+            # reward if note is in chord
             chord = BLUES_PROG_INT[bar_num]
             if current_note % 12 in chord:
                 
-                fitness += 50
+                fitness += NOTE_IN_CHORD
                 
         
         # 3rd note: same as two, new note
         elif beat_num == 2:
             
+            # reward if note is in chord
             chord = BLUES_PROG_INT[bar_num]
             if current_note % 12 in chord:
                 
-                fitness += 50
+                fitness += NOTE_IN_CHORD
         
         # 4th note: leading tone to next root
         elif beat_num == 3:
@@ -113,48 +130,68 @@ def evaluate_baseline(individual):
             
             if half or whole or dominant:
                 
-                fitness += 100
-                
-        # reward if note is in chord
-        
-        
+                fitness += LEADING_TONE
         
         # reward if two adjacent notes are different
         if prev_note > 0 and next_note > 0:
             if current_note != prev_note:
-                fitness += 10
+                fitness += NON_REPEATED_NOTES
             if current_note != next_note:
-                fitness += 10
+                fitness += NON_REPEATED_NOTES
             if prev_note != next_note:
-                fitness += 10
+                fitness += NON_REPEATED_NOTES
                 
-        # Reward if interval between notes is less than a fifth
-        if prev_note > 0:
-            if abs(current_note - prev_note) < 5:
-                fitness += 15
-                
+        
+        # Check if current note fits in current chord
+        root = BLUES_PROG_INT[bar_num][0]
+        root_note = Note().from_int(root)
+        scale = scales.Diatonic(root_note.name, (3, 7))
+        
+        # print(scale.ascending())
+        
+        if Note().from_int(current_note).name in scale.ascending():
+            
+            fitness += NOTE_IN_SCALE
+        # get scale from 
+        
         # # Reward if current note is between previous and next
         # if prev_note > 0 and next_note > 0:
         #     # up
         #     if current_note > prev_note and current_note < next_note:
         #         fitness += 10
-            
+        
         #     # down
         #     if current_note < prev_note and current_note > next_note:
         #         fitness += 10
-            
-            
-                
-        #     # no tritone jumps
-        #     if abs(current_note - prev_note) == 6:
-        #         fitness -= 500
-            
         
     return fitness
 
 
+def Jazz_Bass():
+    jazz_bass = MidiInstrument("Jazz Bass")
+    jazz_bass.instrument_nr = 34
+    return jazz_bass
 
-def play_baseline(baseline):
+def generate_midi_track(bassline, instrument, transpose_halfsteps = 0):
+
+    # Create MIDI track
+    track = Track(instrument)
+    
+    # Fill track
+    b = Bar()
+    for note in bassline:
+        # may change duration to second part of tuple for triplets/eighths
+        b.place_notes(Note().from_int(note + transpose_halfsteps), 4)
+        
+        # Create new bar if previous bar full
+        if b.is_full():
+            track.add_bar(b)
+            b = Bar()
+    
+    return track
+
+
+def play_baseline(bassline):
 
     # Create MIDI track for chord progression    
     piano = Piano()
@@ -165,21 +202,9 @@ def play_baseline(baseline):
         b.place_notes(chord, 1)
         t_prog.add_bar(b)
 
+    # create midi track for bassline
 
-    # Create MIDI track for bassline
-    bass = MidiInstrument("Jazz Bass")
-    bass.instrument_nr = 34
-    t_bass = Track(bass)
-    
-    b = Bar()
-    for note in baseline:
-        # may change duration to second part of tuple for triplets/eighths
-        b.place_notes(Note().from_int(note), 4)
-        
-        # Create new bar if previous bar full
-        if b.is_full():
-            t_bass.add_bar(b)
-            b = Bar()
+    t_bass = generate_midi_track(bassline, Jazz_Bass())
 
     # Create composition to hold tracks
     c = Composition()
@@ -194,13 +219,11 @@ def play_baseline(baseline):
     fs.play_Composition(c, None, BPM)
     
     
-def generate_midi():
-    pass
-    
-    
-def generate_score(goat_bassline):
-    pass
-    
+def generate_score(bassline, filename):
+    # transpose an octave so bassline appears nicely on staff
+    bass_track = generate_midi_track(bassline, Piano(), 24)
+    bassline_pond = lilypond.from_Track(bass_track)
+    lilypond.to_png(bassline_pond, filename)
     
     
     

@@ -44,7 +44,7 @@ NGEN = 500
 
 POP_SIZE = 100
 
-TOURN_SIZE = 4
+TOURN_SIZE = 3
 
 # Must be even number, evenly divisible by tournament size
 NUM_PARENTS = POP_SIZE // TOURN_SIZE
@@ -55,14 +55,6 @@ HOF_SIZE = 1
 # 4 quarter notes * 12 measures to start
 # BASE_LEN = len(BLUES_12 * 4)
 BASE_LEN = 48
-
-
-
-# Mutation operators
-
-# No tritone or larger than fifth becuase those don't make sense musically
-# Inspired by possible baseline intervals on a fretboard
-
 
 
 def stepwise(baseline, note_index, interval):
@@ -86,19 +78,59 @@ def quarter_to_eighths(baseline, note_index):
 MUT_FUNC_NAME = [stepwise, quarter_to_triplets, quarter_to_eighths]
 
 
-def mutation(baseline):
+def mutation(bassline):
     
-    # Mutate about 10% of notes using a random mutation function
-    for note_index in range(len(baseline)):
+    for note_index in range(len(bassline)):
         if random.random() < P_MUT_NOTE:
             
             interval = random.choice(MUT_STEPS)
     
-            baseline = stepwise(baseline, note_index, interval)
+            # baseline = stepwise(baseline, note_index, interval)
+            
+            previous_note = bassline[note_index]
+
+            bassline[note_index] += interval  
+            
+    
+            # if note is out of playable range, then keep original note
+            if bassline[note_index] < MIN_NOTE or bassline[note_index] > MAX_NOTE:
+                bassline[note_index] = previous_note
+                
+            
+            # also keep original if new note creates bad interval
+            if note_index > 0:
+                new_jump = abs(bassline[note_index] - bassline[note_index - 1])
+                if new_jump > 5 or new_jump == 6:
+                    bassline[note_index] = previous_note
+            if note_index < len(bassline) - 1:
+                new_jump = abs(bassline[note_index] - bassline[note_index + 1])
+                if new_jump > 5 or new_jump == 6:
+                    bassline[note_index] = previous_note
+                    
+                    
+            if note_index > 0 and note_index < len(bassline) - 1:            
+                next_note = bassline[note_index + 1]
+                prev_note = bassline[note_index - 1]
+                curr_note = bassline[note_index]
+                
+                # new note should be between prev and next, rising or falling             
+                if curr_note < next_note and curr_note > prev_note:
+                    pass
+                elif curr_note < prev_note and curr_note > next_note:
+                    pass
+                else:
+                    # forgive with 20% prob, otherwise replace
+                    if random.random() < 0.01:
+                        bassline[note_index] = previous_note
+                    
+                # keep if note is now identical to next or previous
+                if next_note == prev_note or next_note == curr_note:
+                    bassline[note_index] = previous_note
+                            
             
             # Add in eighths and triplets when quarters down solid
     
-    return baseline
+    return bassline
 
 
 # Single and double crossover should work fine
@@ -128,7 +160,7 @@ def evaluate(individual):
 
 
 def random_note():
-    return random.randint(MIN_NOTE, MAX_NOTE)
+    return random.randint(MIN_NOTE+5, MAX_NOTE-5)
     # return MIN_NOTE + 12
 
 
@@ -166,6 +198,7 @@ for ind, fit in zip(pop, fitnesses):
 hof = tools.HallOfFame(HOF_SIZE)
 
 best_of_gen = []
+avg_fit_of_gen = []
 
 
 # 
@@ -176,41 +209,49 @@ best_of_gen = []
 def print_plot(best_inds):
     generations = [i+1 for i in range(len(best_inds))]
     plt.plot(generations, best_inds)
+    plt.title(f'Average Fitness by generation, population={POP_SIZE}')
+    plt.xlabel('Generation')
+    plt.ylabel('Fitness')
     # for b in best_inds:
     #     print(b)
 
-for g in range(NGEN):
+for gen in range(NGEN):
     # Select the next generation individuals
-    offspring = toolbox.selectParents(pop)
+    parents = toolbox.selectParents(pop)
 
-    # Clone the selected individuals
-    # error, map object is not subscriptable
-    # offspring = map(toolbox.clone, offspring)
+    # make copy of parents
+    parents_clone = map(toolbox.clone, parents)
+    
+    # add to population since crossover/mutation of original 
+    pop.extend(parents_clone)
 
     # Apply crossover and mutation on the offspring
-    for child1, child2 in zip(offspring[::2], offspring[1::2]):
+    for child1, child2 in zip(parents[::2], parents[1::2]):
         if random.random() < P_CX:
             toolbox.mate(child1, child2)
             del child1.fitness.values
             del child2.fitness.values
+            
+    # print(x == parents)
+    # offspring = parents
+    
+    # # Add offspring to population
+    # pop.extend(parents)
 
-    for mutant in offspring:
+    for mutant in pop:
         if random.random() < P_MUT:
             # toolbox.mutate(mutant)
             mutant = mutation(mutant)
             del mutant.fitness.values
 
     # Evaluate the individuals with an invalid fitness
-    invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+    invalid_ind = [ind for ind in pop if not ind.fitness.valid]
     fitnesses = map(toolbox.evaluate, invalid_ind)
     for ind, fit in zip(invalid_ind, fitnesses):
         ind.fitness.values = fit
 
     # The population is entirely replaced by the offspring
     # pop[:] = offspring
-    
-    # Add offspring to population
-    pop.extend(offspring)
     
     # Survivor selection
     pop[:] = toolbox.selectSurvivors(pop)
@@ -221,13 +262,17 @@ for g in range(NGEN):
     
     best_of_gen.append(hof[0].fitness.values)
     
-    # best_ind = toolbox.bestInd(pop, 1)[0]
+    # add to list of average population
+    avg_fit = 0
+    for individual in pop:
+        avg_fit += individual.fitness.values[0]
+    avg_fit /= POP_SIZE
+    avg_fit_of_gen.append(avg_fit)
     
 
-print_plot(best_of_gen)
-
-# print(hof[0])
-# music.play_baseline(hof[0])
-music.generate_score(hof[0])
+print_plot(avg_fit_of_gen)
+print(hof[0])
+music.play_baseline(hof[0])
+music.generate_score(hof[0], 'goat.png')
     
 # print(best_ind, '\n', best_ind.fitness.values)
