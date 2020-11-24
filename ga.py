@@ -1,10 +1,24 @@
-import random
-from deap import base, creator, tools
+# 
+# Evolutionary Music in Python
+# 
+# CSE 848 semester project
+# 
+# Kevin McMahon
+# 
+# Define GA and helper functions for bassline evolution
+# 
 
+from deap import base, creator, tools
+from matplotlib import pyplot as plt
+import random
 import music
 
-from matplotlib import pyplot as plt
 
+
+
+
+def main():
+    
 
 
 # Individuals start as sequence of quarter notes
@@ -24,8 +38,9 @@ from matplotlib import pyplot as plt
 
 
 
-
+# 
 # Koza Tableau
+# 
 
 P_CX = 0.1
 
@@ -36,9 +51,8 @@ P_MUT_NOTE = 0.05
 # half, whole, m3, M3, 4th, 5th
 MUT_STEPS = [-1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -7, 7]
 
-# C0 to B1, C2 is 48
-MIN_NOTE = 24
-MAX_NOTE = 47
+MIN_NOTE = 24 # C0
+MAX_NOTE = 47 # B1
 
 NGEN = 500
 
@@ -51,10 +65,11 @@ NUM_PARENTS = POP_SIZE // TOURN_SIZE
 
 HOF_SIZE = 1
 
-
 # 4 quarter notes * 12 measures to start
 # BASE_LEN = len(BLUES_12 * 4)
 BASE_LEN = 48
+
+
 
 
 def stepwise(baseline, note_index, interval):
