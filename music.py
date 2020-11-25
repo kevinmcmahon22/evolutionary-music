@@ -10,44 +10,31 @@ import random
 import os
 
 
+
 '''
-Handle musical operations for GA
+Initialization
 '''
 
+# MIDI note values
+MIN_NOTE = 24 # C0
+MAX_NOTE = 47 # B1
+INIT_NOTE = 36
 
-# Vars for MIDI output
-BPM = 200
-soundfont = 'FluidR3_GM.sf2'
+def random_note():
+    # return random.randint(MIN_NOTE, MAX_NOTE)
+    # return INIT_NOTE
+    return random.randint(INIT_NOTE-5, INIT_NOTE+5)
 
-# Evaluation metrics
-NON_REPEATED_NOTES = 4
-NOTE_IN_CHORD = 3
-NOTE_IN_SCALE = 1
-LEADING_TONE = 2
-ROOT = 5
+
+'''
+Mutation
+'''
 
 # Mutations stpes to be used - half, whole, m3, M3, 4, 5
 MUT_STEPS = [-1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -7, 7]
 
 # prob of mutating any given note
 P_MUT_NOTE = 0.05
-
-# MIDI note values
-MIN_NOTE = 24 # C0
-MAX_NOTE = 47 # B1
-
-
-'''
-Initialization
-'''
-
-def random_note():
-    return random.randint(MIN_NOTE, MAX_NOTE)
-
-
-'''
-Mutation
-'''
 
 # def stepwise(self, note_index, interval):
     
@@ -82,34 +69,34 @@ def mutate_bassline(bassline, changes):
             if bassline[note_index] < MIN_NOTE or bassline[note_index] > MAX_NOTE:
                 bassline[note_index] -= interval
                 continue
-            
-            # interval between mutated and next/previous note that is larger than a fifth or a tritone
-            if note_index > 0:
-                new_jump = abs(bassline[note_index] - bassline[note_index - 1])
-                if new_jump > 7 or new_jump == 6:
-                    bassline[note_index] -= interval
-                    continue
-            if note_index < changes.BASS_LEN - 1:
-                new_jump = abs(bassline[note_index] - bassline[note_index + 1])
-                if new_jump > 7 or new_jump == 6:
-                    bassline[note_index] -= interval
-                    continue
 
-            if note_index > 0 and note_index < changes.BASS_LEN - 1:            
+            if note_index > 0 and note_index < changes.BASS_LEN - 1:
                 next_note = bassline[note_index + 1]
                 prev_note = bassline[note_index - 1]
                 curr_note = bassline[note_index]
-                
-                # new note doesn't create a rising/falling line, ignore with 1% probability
-                if (curr_note < prev_note and curr_note < next_note) or (curr_note > prev_note and curr_note > next_note):
-                    if random.random() < 0.01:
-                        bassline[note_index] -= interval
-                        continue
+
+                # interval between next and current note is too large
+                new_jump = abs(curr_note - next_note)
+                if new_jump > 7 or new_jump == 6:
+                    bassline[note_index] -= interval
+                    continue
+                    
+                # interval between previous and current note is too large
+                new_jump = abs(curr_note - prev_note)
+                if new_jump > 7 or new_jump == 6:
+                    bassline[note_index] -= interval
+                    continue 
                     
                 # new note identical to next or previous note
                 if next_note == prev_note or next_note == curr_note:
                     bassline[note_index] -= interval
                     continue
+
+                # new note doesn't create a rising/falling line, ignore with 1% probability
+                # if (curr_note < prev_note and curr_note < next_note) or (curr_note > prev_note and curr_note > next_note):
+                #     if random.random() < 0.01:
+                #         bassline[note_index] -= interval
+                #         continue
                             
             # Add in eighths and triplets when quarters down solid
             # Increment BASS_LEN if add/remove eighths
@@ -120,6 +107,15 @@ def mutate_bassline(bassline, changes):
 '''
 Evaluation
 '''
+
+# Evaluation metrics
+NON_REPEATED_NOTES = 1
+NOTE_IN_CHORD = 3
+NOTE_IN_SCALE = 4
+NOTE_NOTE_IN_SCALE = -5
+LEADING_TONE = 2
+FIRST_NOTE_ROOT = 6
+WALKING_PATTERN = 5
 
 def evaluate_bassline(bassline, changes):
     '''
@@ -142,13 +138,12 @@ def evaluate_bassline(bassline, changes):
         
     for note_index in range(len(bassline)):
         
+        current_note = bassline[note_index]
         next_note = bassline[0] if note_index >= changes.BASS_LEN - 1 else bassline[note_index + 1]
         prev_note = bassline[changes.BASS_LEN-1] if note_index <= 0 else bassline[note_index - 1]
-        
+
         bar_num = note_index // 4
         beat_num = note_index % 4
-        
-        current_note = bassline[note_index]
         
         # 1st note: root
         if beat_num == 0:
@@ -163,7 +158,7 @@ def evaluate_bassline(bassline, changes):
             root = chord[0]
             if current_note % 12 == root:
                 
-                fitness += ROOT
+                fitness += FIRST_NOTE_ROOT
         
         # 2nd note: any note of chord/scale
         elif beat_num == 1:
@@ -195,6 +190,19 @@ def evaluate_bassline(bassline, changes):
             if half or whole or dominant:
                 
                 fitness += LEADING_TONE
+
+        # Check if current note fits in current chord
+        root = changes.BLUES_PROG_INT[bar_num][0]
+        root_note = Note().from_int(root)
+        scale = scales.Diatonic(root_note.name, (3, 7)).ascending()
+        
+        if Note().from_int(current_note).name in scale:
+            
+            fitness += NOTE_IN_SCALE
+
+        else:
+
+            fitness += NOTE_NOTE_IN_SCALE
         
         # reward if two adjacent notes are different
         if current_note != prev_note:
@@ -205,28 +213,13 @@ def evaluate_bassline(bassline, changes):
             
         if prev_note != next_note:
             fitness += NON_REPEATED_NOTES
-            
         
-        # Check if current note fits in current chord
-        root = changes.BLUES_PROG_INT[bar_num][0]
-        root_note = Note().from_int(root)
-        scale = scales.Diatonic(root_note.name, (3, 7)).ascending()
-        
-        if Note().from_int(current_note).name in scale:
-            
-            fitness += NOTE_IN_SCALE
-            
-        # get scale from 
-        
-        # # Reward if current note is between previous and next
-        # if prev_note > 0 and next_note > 0:
-        #     # up
-        #     if current_note > prev_note and current_note < next_note:
-        #         fitness += 10
-        
-        #     # down
-        #     if current_note < prev_note and current_note > next_note:
-        #         fitness += 10
+        # reward for an upwards or downwards "walking" pattern
+        if current_note > prev_note and current_note < next_note:
+            fitness += WALKING_PATTERN
+    
+        if current_note < prev_note and current_note > next_note:
+            fitness += WALKING_PATTERN
         
     return fitness,
 
@@ -264,6 +257,10 @@ def JazzBass():
 '''
 Callable output methods
 '''
+
+# Vars for MIDI output
+BPM = 200
+soundfont = 'FluidR3_GM.sf2'
 
 def generate_composition(bassline, changes, transpose=0):
     # Create data structures holding MIDI notes with duration

@@ -28,7 +28,8 @@ class GA:
         self.toolbox.register("attribute", music.random_note)
         self.toolbox.register("individual", tools.initRepeat, creator.Individual, self.toolbox.attribute, n=self.CHANGES.BASS_LEN)
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual, n=self.POP_SIZE)
-        self.toolbox.register("mate", tools.cxTwoPoint)
+        # self.toolbox.register("mate", tools.cxTwoPoint)
+        self.toolbox.register("mate", tools.cxOnePoint)
         self.toolbox.register("selectParents", tools.selTournament, tournsize=self.TOURN_SIZE, k=self.NUM_PARENTS)
         self.toolbox.register("selectSurvivors", tools.selBest, k=self.POP_SIZE)
 
@@ -41,7 +42,6 @@ class GA:
         plt.title(f'Average Fitness by generation, population={self.POP_SIZE}')
         plt.xlabel('Generation')
         plt.ylabel('Fitness')
-
 
     def run_GA(self):
         '''
@@ -105,6 +105,7 @@ class GA:
         best_bassline = hof[0]
         
         print(best_bassline)
+        print(best_bassline.fitness.values)
         self.print_plot(avg_fit_of_gen)
         
         c_score = music.generate_composition(best_bassline, self.CHANGES, transpose=24)
