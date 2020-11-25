@@ -1,30 +1,19 @@
-# 
-# Evolutionary Music in Python
-# 
-# CSE 848 semester project
-# 
-# Kevin McMahon
-# 
-# define Bassline class that handles all musical operations in GA
-# 
 
 from mingus.containers import Track, Bar, Note, Composition
 from mingus.containers.instrument import MidiInstrument, Piano, Guitar
 from mingus.midi import fluidsynth as fs
-
-import mingus.core.progressions as progressions
-import mingus.core.notes as notes
 import mingus.core.scales as scales
 import mingus.midi.midi_file_out as mfo
 import mingus.extra.lilypond as lilypond
 import mingus.extra.tablature as tab
-
-import os
 import random
+import os
+
 
 '''
-Variables for bassline GA
+Handle musical operations for GA
 '''
+
 
 # Vars for MIDI output
 BPM = 200
@@ -43,33 +32,10 @@ MUT_STEPS = [-1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -7, 7]
 # prob of mutating any given note
 P_MUT_NOTE = 0.05
 
-# Min and max MIDI note value
+# MIDI note values
 MIN_NOTE = 24 # C0
 MAX_NOTE = 47 # B1
 
-
-# Progression information
-def get_int_chords():
-    '''
-    Convert chord tones of progression to integer for ease of use in evaluation    
-    '''
-    new_prog = []
-    for chord in BLUES_PROG:
-        chord_int = []
-        for note in chord:
-            note_int = notes.note_to_int(note)
-            chord_int.append(note_int)
-        new_prog.append(chord_int)
-    return new_prog
-
-BLUES_12 = ['I', 'IV', 'I', 'I', 'IV', 'IV', 'I', 'VI', 'II', 'V', 'I', 'V']
-BLUES_PROG = progressions.to_chords(BLUES_12)
-BLUES_PROG_INT = get_int_chords()
-BLUES_NUM_BARS = len(BLUES_12)
-BASS_LEN = BLUES_NUM_BARS * 4 # number of bars * 4 quarter notes
-
-def get_bassline_len():
-    return BASS_LEN
 
 '''
 Initialization
@@ -78,19 +44,20 @@ Initialization
 def random_note():
     return random.randint(MIN_NOTE, MAX_NOTE)
 
+
 '''
 Mutation
 '''
 
 # def stepwise(self, note_index, interval):
     
-#     previous_note = bassline[note_index]
+#     original_note = bassline[note_index]
 
 #     bassline[note_index] += interval  
     
 #     # if note is out of playable range, then keep original note
 #     if bassline[note_index] < MIN_NOTE or bassline[note_index] > MAX_NOTE:
-#         bassline[note_index] = previous_note
+#         bassline[note_index] = original_note
 
 # def quarter_to_triplets(bassline, note_index):
 #     pass
@@ -98,64 +65,63 @@ Mutation
 # def quarter_to_eighths(bassline, note_index):
 #     pass
 
-def mutate_bassline(bassline):
+def mutate_bassline(bassline, changes):
 
-    for note_index in range(BASS_LEN):
+    for note_index in range(changes.BASS_LEN):
         if random.random() < P_MUT_NOTE:
-            
-            interval = random.choice(MUT_STEPS)
-    
-            # baseline = stepwise(baseline, note_index, interval)
-            
-            previous_note = bassline[note_index]
 
-            bassline[note_index] += interval  
-            
-            # if note is out of playable range, then keep original note
+            # Mutate note
+            interval = random.choice(MUT_STEPS)
+            bassline[note_index] += interval
+
+            # 
+            # MODIFIERS: reset note to original value if any of below conditions met
+            # 
+
+            # new note out of playable range
             if bassline[note_index] < MIN_NOTE or bassline[note_index] > MAX_NOTE:
-                bassline[note_index] = previous_note
-                
+                bassline[note_index] -= interval
+                continue
             
-            # also keep original if new note creates bad interval
+            # interval between mutated and next/previous note that is larger than a fifth or a tritone
             if note_index > 0:
                 new_jump = abs(bassline[note_index] - bassline[note_index - 1])
-                if new_jump > 5 or new_jump == 6:
-                    bassline[note_index] = previous_note
-            if note_index < BASS_LEN - 1:
+                if new_jump > 7 or new_jump == 6:
+                    bassline[note_index] -= interval
+                    continue
+            if note_index < changes.BASS_LEN - 1:
                 new_jump = abs(bassline[note_index] - bassline[note_index + 1])
-                if new_jump > 5 or new_jump == 6:
-                    bassline[note_index] = previous_note
-                    
-                    
-            if note_index > 0 and note_index < BASS_LEN - 1:            
+                if new_jump > 7 or new_jump == 6:
+                    bassline[note_index] -= interval
+                    continue
+
+            if note_index > 0 and note_index < changes.BASS_LEN - 1:            
                 next_note = bassline[note_index + 1]
                 prev_note = bassline[note_index - 1]
                 curr_note = bassline[note_index]
                 
-                # new note should be between prev and next, rising or falling             
-                if curr_note < next_note and curr_note > prev_note:
-                    pass
-                elif curr_note < prev_note and curr_note > next_note:
-                    pass
-                else:
-                    # forgive with 20% prob, otherwise replace
+                # new note doesn't create a rising/falling line, ignore with 1% probability
+                if (curr_note < prev_note and curr_note < next_note) or (curr_note > prev_note and curr_note > next_note):
                     if random.random() < 0.01:
-                        bassline[note_index] = previous_note
+                        bassline[note_index] -= interval
+                        continue
                     
-                # keep if note is now identical to next or previous
+                # new note identical to next or previous note
                 if next_note == prev_note or next_note == curr_note:
-                    bassline[note_index] = previous_note
+                    bassline[note_index] -= interval
+                    continue
                             
             # Add in eighths and triplets when quarters down solid
             # Increment BASS_LEN if add/remove eighths
 
     return bassline
 
+
 '''
 Evaluation
 '''
 
-def evaluate_bassline(bassline):
+def evaluate_bassline(bassline, changes):
     '''
     Basic bassline evaluation
 
@@ -176,8 +142,8 @@ def evaluate_bassline(bassline):
         
     for note_index in range(len(bassline)):
         
-        next_note = bassline[0] if note_index >= BASS_LEN - 1 else bassline[note_index + 1]
-        prev_note = bassline[BASS_LEN-1] if note_index <= 0 else bassline[note_index - 1]
+        next_note = bassline[0] if note_index >= changes.BASS_LEN - 1 else bassline[note_index + 1]
+        prev_note = bassline[changes.BASS_LEN-1] if note_index <= 0 else bassline[note_index - 1]
         
         bar_num = note_index // 4
         beat_num = note_index % 4
@@ -188,7 +154,7 @@ def evaluate_bassline(bassline):
         if beat_num == 0:
 
             # reward if note is in chord
-            chord = BLUES_PROG_INT[bar_num]
+            chord = changes.BLUES_PROG_INT[bar_num]
             if current_note % 12 in chord:
                 
                 fitness += NOTE_IN_CHORD   
@@ -203,7 +169,7 @@ def evaluate_bassline(bassline):
         elif beat_num == 1:
             
             # reward if note is in chord
-            chord = BLUES_PROG_INT[bar_num]
+            chord = changes.BLUES_PROG_INT[bar_num]
             if current_note % 12 in chord:
                 
                 fitness += NOTE_IN_CHORD
@@ -213,7 +179,7 @@ def evaluate_bassline(bassline):
         elif beat_num == 2:
             
             # reward if note is in chord
-            chord = BLUES_PROG_INT[bar_num]
+            chord = changes.BLUES_PROG_INT[bar_num]
             if current_note % 12 in chord:
                 
                 fitness += NOTE_IN_CHORD
@@ -242,7 +208,7 @@ def evaluate_bassline(bassline):
             
         
         # Check if current note fits in current chord
-        root = BLUES_PROG_INT[bar_num][0]
+        root = changes.BLUES_PROG_INT[bar_num][0]
         root_note = Note().from_int(root)
         scale = scales.Diatonic(root_note.name, (3, 7)).ascending()
         
@@ -262,13 +228,16 @@ def evaluate_bassline(bassline):
         #     if current_note < prev_note and current_note > next_note:
         #         fitness += 10
         
-    return fitness
+    return fitness,
+
 
 '''
-Output methods
+Output helper methods
 '''
 
-def generate_midi_track(midi_list, instrument, transpose_halfsteps = 0):
+def generate_track(midi_list, instrument, notes_are_int = True, transpose = 0):
+    # midi_list should be list of tuple(int note_value, int_duration)
+    # works for single int and list of strings (note names)
 
     # Create MIDI track
     track = Track(instrument)
@@ -276,7 +245,11 @@ def generate_midi_track(midi_list, instrument, transpose_halfsteps = 0):
     # Fill track with notes
     b = Bar()
     for tup in midi_list:
-        b.place_notes(Note().from_int(tup[0] + transpose_halfsteps), tup[1])
+        note = tup[0]
+        duration = tup[1]
+        if notes_are_int:
+            note = Note().from_int(tup[0]+transpose)
+        b.place_notes(note, duration)
         if b.is_full():
             track.add_bar(b)
             b = Bar()
@@ -287,11 +260,15 @@ def JazzBass():
     jazz_bass.instrument_nr = 34
     return jazz_bass
 
-def play_bassline(bassline):
 
+'''
+Callable output methods
+'''
+
+def generate_composition(bassline, changes, transpose=0):
     # Create data structures holding MIDI notes with duration
     notes_piano = []
-    for chord in BLUES_PROG:
+    for chord in changes.BLUES_PROG:
         notes_piano.append((chord, 1))
         
     notes_bass = []
@@ -300,8 +277,8 @@ def play_bassline(bassline):
         notes_bass.append((note, 4))
         
     # Generate midi tracks for piano and bass
-    t_piano = generate_midi_track(notes_piano, Piano())
-    t_bass = generate_midi_track(notes_bass, JazzBass())
+    t_piano = generate_track(notes_piano, Piano(), notes_are_int=False)
+    t_bass = generate_track(notes_bass, JazzBass(), transpose=transpose)
 
     # Add tracks to a composition
     c = Composition()
@@ -310,40 +287,28 @@ def play_bassline(bassline):
     c.add_track(t_bass)
     c.add_track(t_piano)
     
-    # Create MIDI file of composition
-    midi_filename = 'goat.mid'
-    create_midi_file(midi_filename, c, BPM)
-    
-    # play composition
+    return c
+
+def play_composition(c):
     fs.init(soundfont)
     fs.play_Composition(c, None, BPM)
 
-'''
-More output
-'''
-
-def generate_score(bassline, filename):
-    # transpose 2 octaves so bassline appears nicely on staff
-    notes_bass = []
-    for note in bassline:
-        # change to a list of tups for representation if use eighths/triplets
-        notes_bass.append((note, 4))
-
-    bass_track = generate_midi_track(notes_bass, Piano(), 24)
-    bassline_pond = lilypond.from_Track(bass_track)
+def generate_score(c, filename):
+    bassline_pond = lilypond.from_Composition(c)
     lilypond.to_png(bassline_pond, filename)
+    
+'''
+File creation
+'''
 
-def create_midi_file(midi_filename, track, BPM):
-    # Don't include .mid in filename
-    mfo.write_Track(midi_filename, track, bpm=BPM, repeat=0, verbose=True)
+def create_midi_file(midi_filename, c, BPM):
+    mfo.write_Composition(midi_filename, c, bpm=BPM, repeat=0, verbose=True)
 
 def create_wav_file(wav_filename, track, BPM):
-    # Create MIDI AND wav file with given filename
-    # Don't include .wav in filename
     create_midi_file(wav_filename, track, BPM)
     os.system(f'fluidsynth -F {wav_filename}.wav {soundfont} {wav_filename}.mid')
     
-def print_tab(bassline):
-    # Write to ASCII tab if all notes are in guitar range
-    t_bass = generate_midi_track(bassline, Guitar(), 12)
-    print(tab.from_Track(t_bass))
+# def print_tab(bassline):
+#     # Write to ASCII tab if all notes are in guitar range
+#     t_bass = generate_midi_track(bassline, Guitar(), 12)
+#     print(tab.from_Track(t_bass))

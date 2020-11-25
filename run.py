@@ -5,20 +5,28 @@
 # 
 # Kevin McMahon
 # 
-# Run GA, main file
-# 
 
-import ga
-import music
+from ga import GA
+from progression import Progression
+import sys
 
-# Get progression as input from a text file
 
-# Initialize and run GA
+# Koza Tableau
+num_gens = 500
+pop_size = 100
+tourn_size = 3
+hof_size = 1
+prob_cx = 0.1
+prob_mut = 0.05
 
-# output results
 
-# using a class will allow for easy testing of changing pop_size/gens/crossover function
-# can run 1 ga many times to get an average sum output
+# Create Progression object
+if len(sys.argv) != 2:
+    sys.exit('FileNotSuppliedError: Must supply name of text file contatining a chord progression')
+changes = Progression(sys.argv[1])
 
-ga = ga.GA()
+# Create GA object
+ga = GA(num_gens, pop_size, tourn_size, hof_size, prob_cx, prob_mut, changes)
+
+# Run GA and output results
 ga.run_GA()
