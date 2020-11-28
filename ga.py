@@ -9,7 +9,7 @@ class GA:
     Define GA and helper functions for bassline evolution
     '''
 
-    def __init__(self, num_gens, pop_size, tourn_size, hof_size, prob_cx, prob_mut, changes):
+    def __init__(self, num_gens, pop_size, tourn_size, hof_size, prob_cx, prob_mut, changes, testing=False):
 
         self.NGEN = num_gens
         self.POP_SIZE = pop_size
@@ -19,6 +19,7 @@ class GA:
         self.P_CX = prob_cx
         self.P_MUT = prob_mut
         self.CHANGES = changes
+        self.TESTING = testing
 
         # Create toolbox
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -31,17 +32,19 @@ class GA:
         # self.toolbox.register("mate", tools.cxTwoPoint)
         self.toolbox.register("mate", tools.cxOnePoint)
         self.toolbox.register("selectParents", tools.selTournament, tournsize=self.TOURN_SIZE, k=self.NUM_PARENTS)
+        # self.toolbox.register("selectParents", tools.selRoulette, k=self.NUM_PARENTS)
+        # self.toolbox.register("selectParents", tools.selBest, k=self.NUM_PARENTS)
         self.toolbox.register("selectSurvivors", tools.selBest, k=self.POP_SIZE)
 
-    def print_plot(self, best_inds):
-        '''
-        Print a plot of the list best_inds
-        '''
-        generations = [i+1 for i in range(len(best_inds))]
-        plt.plot(generations, best_inds)
-        plt.title(f'Average Fitness by generation, population={self.POP_SIZE}')
-        plt.xlabel('Generation')
-        plt.ylabel('Fitness')
+    # def print_plot(self, fit_by_gen):
+    #     '''
+    #     Print a plot showing fitness by generation
+    #     '''
+    #     generations = [i+1 for i in range(len(fit_by_gen))]
+    #     plt.plot(generations, fit_by_gen)
+    #     plt.title(f'Average Fitness by generation, population={self.POP_SIZE}')
+    #     plt.xlabel('Generation')
+    #     plt.ylabel('Fitness')
 
     def run_GA(self):
         '''
@@ -100,15 +103,20 @@ class GA:
                 avg_fit += individual.fitness.values[0]
             avg_fit /= self.POP_SIZE
             avg_fit_of_gen.append(avg_fit)
-            
+        
+        # 
         # Output results of GA
-        best_bassline = hof[0]
+        # 
         
-        print(best_bassline)
-        print(best_bassline.fitness.values)
-        self.print_plot(avg_fit_of_gen)
-        
-        c_score = music.generate_composition(best_bassline, self.CHANGES, transpose=24)
-        music.generate_score(c_score, 'goat.png')
-        c = music.generate_composition(best_bassline, self.CHANGES)
-        music.play_composition(c)
+        if not self.TESTING:
+            
+            best_bassline = hof[0]
+            print(best_bassline)
+            print(best_bassline.fitness.values)
+            
+            c_score = music.generate_composition(best_bassline, self.CHANGES, transpose=24)
+            music.generate_score(c_score, 'goat.png')
+            c = music.generate_composition(best_bassline, self.CHANGES)
+            music.play_composition(c)
+
+        return avg_fit_of_gen

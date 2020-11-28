@@ -18,12 +18,13 @@ Initialization
 # MIDI note values
 MIN_NOTE = 24 # C0
 MAX_NOTE = 47 # B1
-INIT_NOTE = 36
+INIT_NOTE = 36 # middle of playable range
+INIT_RANGE = 5 # interval to allow initialized notes
 
 def random_note():
     # return random.randint(MIN_NOTE, MAX_NOTE)
     # return INIT_NOTE
-    return random.randint(INIT_NOTE-5, INIT_NOTE+5)
+    return random.randint(INIT_NOTE-INIT_RANGE, INIT_NOTE+INIT_RANGE)
 
 
 '''
@@ -127,11 +128,9 @@ def evaluate_bassline(bassline, changes):
     4. leading tone: half, whole, fifth
 
     additions:
-        check if each note is in chord represented by scale
+        reward if current note is in chord analogous to current scale
         reward if two adjacent notes are not repeating
-
-    potential:
-        reward for moving up/down in linear patterns
+        reward for musical line moving up/down, aka "walking" bassline
     '''
     
     fitness = 0
@@ -229,8 +228,10 @@ Output helper methods
 '''
 
 def generate_track(midi_list, instrument, notes_are_int = True, transpose = 0):
-    # midi_list should be list of tuple(int note_value, int_duration)
-    # works for single int and list of strings (note names)
+    '''
+    midi_list should be list of tuple(int note_value, int_duration)
+    works for single int and list of strings (note names)
+    '''
 
     # Create MIDI track
     track = Track(instrument)
@@ -259,7 +260,7 @@ Callable output methods
 '''
 
 # Vars for MIDI output
-BPM = 200
+BPM = 220
 soundfont = 'FluidR3_GM.sf2'
 
 def generate_composition(bassline, changes, transpose=0):
@@ -279,11 +280,14 @@ def generate_composition(bassline, changes, transpose=0):
 
     # Add tracks to a composition
     c = Composition()
-    c.set_author('Kevin', 'email')
-    c.set_title('Evolved bassline')
+    c.set_author('Kevin')
+    c.set_title(f'{changes.SONG_TITLE} Evolved Bassline')
     c.add_track(t_bass)
     c.add_track(t_piano)
     
+    c2 = Composition()
+    c2.add_track(t_bass)
+
     return c
 
 def play_composition(c):
