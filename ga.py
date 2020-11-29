@@ -29,10 +29,10 @@ class GA:
         self.toolbox.register("attribute", music.random_note)
         self.toolbox.register("individual", tools.initRepeat, creator.Individual, self.toolbox.attribute, n=self.CHANGES.BASS_LEN)
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual, n=self.POP_SIZE)
-        # self.toolbox.register("mate", tools.cxTwoPoint)
-        self.toolbox.register("mate", tools.cxOnePoint)
+        # self.toolbox.register("mate", tools.cxOnePoint)
+        self.toolbox.register("mate", tools.cxTwoPoint)
         self.toolbox.register("selectParents", tools.selTournament, tournsize=self.TOURN_SIZE, k=self.NUM_PARENTS)
-        # self.toolbox.register("selectParents", tools.selRoulette, k=self.NUM_PARENTS)
+        # self.toolbox.register("selectParents", tools.selRandom, k=self.NUM_PARENTS)
         # self.toolbox.register("selectParents", tools.selBest, k=self.NUM_PARENTS)
         self.toolbox.register("selectSurvivors", tools.selBest, k=self.POP_SIZE)
 

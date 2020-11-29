@@ -24,11 +24,11 @@ class Run:
         
         self.KOZA = {
             'num_gens'   : 500,
-            'pop_size'   : 100,
+            'pop_size'   : 80,
             'tourn_size' : 3,
             'hof_size'   : 1,
-            'prob_cx'    : 0.1,
-            'prob_mut'   : 0.05,   
+            'prob_cx'    : 0.3,
+            'prob_mut'   : 0.65,   
         }
         
         self.INIT_KOZA = self.KOZA
@@ -53,12 +53,14 @@ class Run:
             if type(tup[0]) == float:
                 plt_label = round(tup[0], 2)
             plt.plot(generations, tup[1], label=plt_label)
-        plt.title(f'Average Fitness by Generation, Varying {variable_name}\ngens={self.KOZA["num_gens"]}, runs={self.NUM_RUNS}')
+        # plt.title(f'Average Fitness by Generation, Varying {variable_name}\ngens={self.KOZA["num_gens"]}, runs={self.NUM_RUNS}')
+        plt.title(f'Average Fitness by Generation, 2 Point Crossover\npop={self.KOZA["pop_size"]}, gens={self.KOZA["num_gens"]}, runs={self.NUM_RUNS}')
         plt.xlabel('Generation')
         plt.ylabel('Fitness')
         plt.legend(loc='lower right')
         plt.grid(True)
-        plt.savefig(f'./plots/{variable_name}{values[0]}_{self.KOZA[variable_name]}__{self.KOZA["num_gens"]}gens_{self.NUM_RUNS}runs.png')
+        # plt.savefig(f'./plots/{variable_name}{values[0]}_{self.KOZA[variable_name]}__{self.KOZA["num_gens"]}gens_{self.NUM_RUNS}runs.png')
+        plt.savefig(f'./plots/cx_2pnt.png')
         plt.close()
     
     def one_run(self):
@@ -100,6 +102,28 @@ class Run:
             
             # Output results for each list index to it's own plot
             self.display_plot(fitness_by_gen, variable_name, values)
+
+    def test_operator(self, operator_name):
+
+        # Added flag to suppress MIDI output when testing
+        ga = GA(*self.KOZA.values(), self.CHANGES, True)
+        
+        # Create a blank plot
+        plt.figure(figsize=(16,8))
+        plt.rcParams.update({'font.size': 12})
+        plt.title(f'Average Fitness by Generation, {operator_name}\npop={self.KOZA["pop_size"]}, gens={self.KOZA["num_gens"]}, runs={self.NUM_RUNS}')
+        plt.xlabel('Generation')
+        plt.ylabel('Fitness')
+        plt.grid(True)
+                
+        # run GA for specified number of runs with this set of variable values
+        generations = [i for i in range(self.KOZA["num_gens"])]
+        for i in range(self.NUM_RUNS):
+            avg_fit = ga.run_GA()
+            plt.plot(generations, avg_fit)
+
+        plt.savefig(f'./plots/operators/{operator_name}.png')
+        plt.close()
             
 
 # 
@@ -118,14 +142,23 @@ class Run:
 # Keep size of legend in mind when choosing range for variables
 
 testing_list = [(
-    # 'pop_size' , [10, 150, 10]        ),(
+    'pop_size' , [10, 150, 10]        ),(
     'pop_size' , [150, 200, 10]       ),(
     'prob_cx'  , [0.05, 0.8, 0.05]    ),(
     'prob_mut' , [0.05, 0.8, 0.05]    )
 ]
 
 start = time.time()
-runner = Run(50)
-runner.test(testing_list)
+runner = Run(15)
+
+# runner.test(testing_list)
+
+# runner.test_operator('One Point Crossover')
+# runner.test_operator('Two Point Crossover')
+# runner.test_operator('Tournament')
+runner.test_operator('Select Random')
+# runner.test_operator('Select Best')
+
 print("Testing time: ", time.time() - start)
 
+# TODO GUI would be pretty neat
