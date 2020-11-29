@@ -113,7 +113,7 @@ Evaluation
 NON_REPEATED_NOTES = 1
 NOTE_IN_CHORD = 3
 NOTE_IN_SCALE = 4
-NOTE_NOTE_IN_SCALE = -5
+NOTE_NOT_IN_SCALE = -5
 LEADING_TONE = 2
 FIRST_NOTE_ROOT = 6
 WALKING_PATTERN = 5
@@ -201,7 +201,7 @@ def evaluate_bassline(bassline, changes):
 
         else:
 
-            fitness += NOTE_NOTE_IN_SCALE
+            fitness += NOTE_NOT_IN_SCALE
         
         # reward if two adjacent notes are different
         if current_note != prev_note:

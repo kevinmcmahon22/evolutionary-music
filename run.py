@@ -57,6 +57,7 @@ class Run:
         plt.xlabel('Generation')
         plt.ylabel('Fitness')
         plt.legend(loc='lower right')
+        plt.grid(True)
         plt.savefig(f'./plots/{variable_name}{values[0]}_{self.KOZA[variable_name]}__{self.KOZA["num_gens"]}gens_{self.NUM_RUNS}runs.png')
         plt.close()
     
@@ -117,11 +118,10 @@ class Run:
 # Keep size of legend in mind when choosing range for variables
 
 testing_list = [(
-    'pop_size' , [10, 150, 10]        ),(
-    'pop_size' , [50, 1000, 50]       ),(
+    # 'pop_size' , [10, 150, 10]        ),(
+    'pop_size' , [150, 200, 10]       ),(
     'prob_cx'  , [0.05, 0.8, 0.05]    ),(
-    'prob_mut' , [0.05, 0.8, 0.05]    ),(
-    'num_gens' , [100, 2000, 100]     )
+    'prob_mut' , [0.05, 0.8, 0.05]    )
 ]
 
 start = time.time()

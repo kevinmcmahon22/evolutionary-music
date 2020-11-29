@@ -58,7 +58,6 @@ class GA:
         hof = tools.HallOfFame(self.HOF_SIZE)
         avg_fit_of_gen = []
 
-
         # Execute generations
         for gen in range(self.NGEN):
             # Select the next generation individuals
