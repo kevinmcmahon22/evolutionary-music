@@ -3,6 +3,7 @@ from deap import base, creator, tools
 from matplotlib import pyplot as plt
 import random
 import music
+import time
 
 class GA:
     '''
@@ -14,7 +15,10 @@ class GA:
         self.NGEN = num_gens
         self.POP_SIZE = pop_size
         self.TOURN_SIZE = tourn_size
-        self.NUM_PARENTS = self.POP_SIZE // self.TOURN_SIZE # Must be even number, evenly divisible by tournament size
+        self.NUM_PARENTS = self.POP_SIZE // self.TOURN_SIZE
+        # Number of parents must be even
+        if self.NUM_PARENTS % 2 == 1:
+            self.NUM_PARENTS += 1
         self.HOF_SIZE = hof_size
         self.P_CX = prob_cx
         self.P_MUT = prob_mut
@@ -50,6 +54,8 @@ class GA:
         '''
         Run the GA specified by parameters input in constructor
         '''
+
+        start_ga_time = time.time()
 
         # Initialize population
         pop = self.toolbox.population()
@@ -108,6 +114,8 @@ class GA:
         # 
         
         if not self.TESTING:
+
+            print('GA execution time:', time.time() - start_ga_time)
             
             best_bassline = hof[0]
             print(best_bassline)

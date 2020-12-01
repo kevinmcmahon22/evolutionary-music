@@ -16,15 +16,15 @@ import time
 
 class Run:
     
-    def __init__(self, num_runs=1):
+    def __init__(self, num_runs=1, num_gens=500):
         
         # 
         # Koza Tableau
         # 
         
         self.KOZA = {
-            'num_gens'   : 500,
-            'pop_size'   : 80,
+            'num_gens'   : num_gens,
+            'pop_size'   : 70,
             'tourn_size' : 3,
             'hof_size'   : 1,
             'prob_cx'    : 0.3,
@@ -37,7 +37,6 @@ class Run:
         if len(sys.argv) != 2:
             sys.exit('FileNotSuppliedError: Must supply name of text file contatining a chord progression')
         self.CHANGES = Progression(sys.argv[1])
-        # self.CHANGES = Progression('blues.txt')
         
         self.NUM_RUNS = num_runs
         
@@ -53,21 +52,19 @@ class Run:
             if type(tup[0]) == float:
                 plt_label = round(tup[0], 2)
             plt.plot(generations, tup[1], label=plt_label)
-        # plt.title(f'Average Fitness by Generation, Varying {variable_name}\ngens={self.KOZA["num_gens"]}, runs={self.NUM_RUNS}')
-        plt.title(f'Average Fitness by Generation, 2 Point Crossover\npop={self.KOZA["pop_size"]}, gens={self.KOZA["num_gens"]}, runs={self.NUM_RUNS}')
+        plt.title(f'Average Fitness by Generation, Varying {variable_name}\ngens={self.KOZA["num_gens"]}, runs={self.NUM_RUNS}')
         plt.xlabel('Generation')
         plt.ylabel('Fitness')
         plt.legend(loc='lower right')
         plt.grid(True)
-        # plt.savefig(f'./plots/{variable_name}{values[0]}_{self.KOZA[variable_name]}__{self.KOZA["num_gens"]}gens_{self.NUM_RUNS}runs.png')
-        plt.savefig(f'./plots/cx_2pnt.png')
+        plt.savefig(f'./plots/{variable_name}{values[0]}_{self.KOZA[variable_name]}__{self.KOZA["num_gens"]}gens_{self.NUM_RUNS}runs.png')
         plt.close()
     
     def one_run(self):
         ga = GA(*self.KOZA.values(), self.CHANGES)
         ga.run_GA()
 
-    def test(self, testing_list):
+    def test_parameters(self, testing_list):
         
         for variable_name, values in testing_list:
             
@@ -124,41 +121,45 @@ class Run:
 
         plt.savefig(f'./plots/operators/{operator_name}.png')
         plt.close()
-            
+
+
+run = False    
+test = True
 
 # 
 # Generate a single bassline
 # 
 
-# start = time.time()
-# runner = Run()
-# runner.one_run()
-# print("Execution time: ", time.time() - start)
+if run:
+    runner = Run(num_gens=1000)
+    runner.one_run()
 
 # 
 # Run testing suite, output results on one plot for each variable tested
 # 
 
-# Keep size of legend in mind when choosing range for variables
+if test:
 
-testing_list = [(
-    'pop_size' , [10, 150, 10]        ),(
-    'pop_size' , [150, 200, 10]       ),(
-    'prob_cx'  , [0.05, 0.8, 0.05]    ),(
-    'prob_mut' , [0.05, 0.8, 0.05]    )
-]
+    # Keep size of legend in mind when choosing range for variables
+    testing_list = [(
+        'tourn_size' , [2, 10, 1])
+        # 'pop_size'   , [10, 150, 10]        ),(
+        # 'pop_size'   , [150, 200, 10]       ),(
+        # 'prob_cx'    , [0.05, 0.8, 0.05]    ),(
+        # 'prob_mut'   , [0.05, 0.8, 0.05]    )
+    ]
 
-start = time.time()
-runner = Run(15)
+    start = time.time()
+    runner = Run(num_runs=10, num_gens=250)
 
-# runner.test(testing_list)
+    runner.test_parameters(testing_list)
 
-# runner.test_operator('One Point Crossover')
-# runner.test_operator('Two Point Crossover')
-# runner.test_operator('Tournament')
-runner.test_operator('Select Random')
-# runner.test_operator('Select Best')
+    # runner.test_operator('One Point Crossover') # only need 300 gens
+    # runner.test_operator('Two Point Crossover') # same
+    # runner.test_operator('Tournament')
+    # runner.test_operator('Select Random')
+    # runner.test_operator('Select Best')
 
-print("Testing time: ", time.time() - start)
+    print("Testing time: ", time.time() - start)
 
-# TODO GUI would be pretty neat
+    # TODO GUI would be pretty neat
