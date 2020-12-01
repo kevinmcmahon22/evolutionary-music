@@ -24,7 +24,7 @@ class Run:
         
         self.KOZA = {
             'num_gens'   : num_gens,
-            'pop_size'   : 70,
+            'pop_size'   : 80,
             'tourn_size' : 3,
             'hof_size'   : 1,
             'prob_cx'    : 0.3,
@@ -150,15 +150,16 @@ if test:
     ]
 
     start = time.time()
-    runner = Run(num_runs=10, num_gens=250)
+    runner = Run(num_runs=15, num_gens=500)
 
-    runner.test_parameters(testing_list)
+    # runner.test_parameters(testing_list)
 
     # runner.test_operator('One Point Crossover') # only need 300 gens
     # runner.test_operator('Two Point Crossover') # same
     # runner.test_operator('Tournament')
     # runner.test_operator('Select Random')
     # runner.test_operator('Select Best')
+    runner.test_operator('Roulette')
 
     print("Testing time: ", time.time() - start)
 

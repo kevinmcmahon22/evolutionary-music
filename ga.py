@@ -36,19 +36,11 @@ class GA:
         # self.toolbox.register("mate", tools.cxOnePoint)
         self.toolbox.register("mate", tools.cxTwoPoint)
         self.toolbox.register("selectParents", tools.selTournament, tournsize=self.TOURN_SIZE, k=self.NUM_PARENTS)
+        # self.toolbox.register("selectParents", tools.selRoulette, k=self.NUM_PARENTS)
         # self.toolbox.register("selectParents", tools.selRandom, k=self.NUM_PARENTS)
         # self.toolbox.register("selectParents", tools.selBest, k=self.NUM_PARENTS)
         self.toolbox.register("selectSurvivors", tools.selBest, k=self.POP_SIZE)
 
-    # def print_plot(self, fit_by_gen):
-    #     '''
-    #     Print a plot showing fitness by generation
-    #     '''
-    #     generations = [i+1 for i in range(len(fit_by_gen))]
-    #     plt.plot(generations, fit_by_gen)
-    #     plt.title(f'Average Fitness by generation, population={self.POP_SIZE}')
-    #     plt.xlabel('Generation')
-    #     plt.ylabel('Fitness')
 
     def run_GA(self):
         '''
@@ -59,6 +51,11 @@ class GA:
 
         # Initialize population
         pop = self.toolbox.population()
+
+        # Evaluate initial population, here so Roulette selection will work
+        fitnesses = [music.evaluate_bassline(ind, self.CHANGES) for ind in pop]
+        for ind, fit in zip(pop, fitnesses):
+            ind.fitness.values = fit
             
         # Initialize HOF and average fitness list
         hof = tools.HallOfFame(self.HOF_SIZE)
