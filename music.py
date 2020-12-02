@@ -1,6 +1,6 @@
 
 from mingus.containers import Track, Bar, Note, Composition
-from mingus.containers.instrument import MidiInstrument, Piano, Guitar
+from mingus.containers.instrument import MidiInstrument
 from mingus.midi import fluidsynth as fs
 import mingus.core.scales as scales
 import mingus.midi.midi_file_out as mfo
@@ -251,23 +251,28 @@ def generate_track(midi_list, instrument, notes_are_int = True, transpose = 0):
 
 def JazzBass():
     jazz_bass = MidiInstrument("Jazz Bass")
-    jazz_bass.instrument_nr = 34
+    jazz_bass.instrument_nr = 38
     return jazz_bass
 
+def Accompaniment():
+    acc = MidiInstrument("Accompaniment")
+    acc.instrument_nr = 38
+    return acc
+    
 
 '''
 Callable output methods
 '''
 
-# Vars for MIDI output
+# Variables for MIDI output
 BPM = 220
 soundfont = 'FluidR3_GM.sf2'
 
 def generate_composition(bassline, changes, transpose=0):
     # Create data structures holding MIDI notes with duration
-    notes_piano = []
+    notes_acc = []
     for chord in changes.BLUES_PROG:
-        notes_piano.append((chord, 1))
+        notes_acc.append((chord, 1))
         
     notes_bass = []
     for note in bassline:
@@ -275,7 +280,7 @@ def generate_composition(bassline, changes, transpose=0):
         notes_bass.append((note, 4))
         
     # Generate midi tracks for piano and bass
-    t_piano = generate_track(notes_piano, Piano(), notes_are_int=False)
+    t_acc = generate_track(notes_acc, Accompaniment(), notes_are_int=False)
     t_bass = generate_track(notes_bass, JazzBass(), transpose=transpose)
 
     # Add tracks to a composition
@@ -283,10 +288,7 @@ def generate_composition(bassline, changes, transpose=0):
     c.set_author('Kevin')
     c.set_title(f'{changes.SONG_TITLE} Evolved Bassline')
     c.add_track(t_bass)
-    c.add_track(t_piano)
-    
-    c2 = Composition()
-    c2.add_track(t_bass)
+    c.add_track(t_acc)
 
     return c
 
@@ -302,11 +304,11 @@ def generate_score(c, filename):
 File creation
 '''
 
-def create_midi_file(midi_filename, c, BPM):
-    mfo.write_Composition(midi_filename, c, bpm=BPM, repeat=0, verbose=True)
+def create_midi_file(midi_filename, c):
+    mfo.write_Composition(f'{midi_filename}.mid', c, bpm=BPM, repeat=0, verbose=True)
 
-def create_wav_file(wav_filename, track, BPM):
-    create_midi_file(wav_filename, track, BPM)
+def create_wav_file(wav_filename, c):
+    create_midi_file(wav_filename, c)
     os.system(f'fluidsynth -F {wav_filename}.wav {soundfont} {wav_filename}.mid')
     
 # def print_tab(bassline):

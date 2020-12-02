@@ -11,7 +11,7 @@ class Progression:
     def __init__(self, filename):
 
         # Get chord progression in roman numeral notation from text file
-        fp = open(filename, 'r')
+        fp = open(f'./progressions/{filename}', 'r')
         self.BLUES_12 = []
 
         # First line of text file will always be song name

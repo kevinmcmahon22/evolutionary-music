@@ -36,6 +36,7 @@ class Run:
         # Create Progression object
         if len(sys.argv) != 2:
             sys.exit('FileNotSuppliedError: Must supply name of text file contatining a chord progression')
+        self.SONG_TITLE = sys.argv[1].split('.')[0]
         self.CHANGES = Progression(sys.argv[1])
         
         self.NUM_RUNS = num_runs
@@ -61,7 +62,7 @@ class Run:
         plt.close()
     
     def one_run(self):
-        ga = GA(*self.KOZA.values(), self.CHANGES)
+        ga = GA(*self.KOZA.values(), self.CHANGES, self.SONG_TITLE)
         ga.run_GA()
 
     def test_parameters(self, testing_list):
@@ -123,15 +124,15 @@ class Run:
         plt.close()
 
 
-run = False    
-test = True
+run = True    
+test = False
 
 # 
 # Generate a single bassline
 # 
 
 if run:
-    runner = Run(num_gens=1000)
+    runner = Run(num_gens=500)
     runner.one_run()
 
 # 
@@ -142,24 +143,24 @@ if test:
 
     # Keep size of legend in mind when choosing range for variables
     testing_list = [(
-        'tourn_size' , [2, 10, 1])
-        # 'pop_size'   , [10, 150, 10]        ),(
-        # 'pop_size'   , [150, 200, 10]       ),(
-        # 'prob_cx'    , [0.05, 0.8, 0.05]    ),(
-        # 'prob_mut'   , [0.05, 0.8, 0.05]    )
+        'tourn_size' , [2, 10, 1]           ),(
+        'pop_size'   , [10, 150, 10]        ),(
+        'pop_size'   , [150, 200, 10]       ),(
+        'prob_cx'    , [0.05, 0.8, 0.05]    ),(
+        'prob_mut'   , [0.05, 0.8, 0.05]    )
     ]
 
     start = time.time()
     runner = Run(num_runs=15, num_gens=500)
 
-    # runner.test_parameters(testing_list)
+    runner.test_parameters(testing_list)
 
     # runner.test_operator('One Point Crossover') # only need 300 gens
     # runner.test_operator('Two Point Crossover') # same
     # runner.test_operator('Tournament')
     # runner.test_operator('Select Random')
     # runner.test_operator('Select Best')
-    runner.test_operator('Roulette')
+    # runner.test_operator('Roulette')
 
     print("Testing time: ", time.time() - start)
 

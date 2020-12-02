@@ -10,7 +10,7 @@ class GA:
     Define GA and helper functions for bassline evolution
     '''
 
-    def __init__(self, num_gens, pop_size, tourn_size, hof_size, prob_cx, prob_mut, changes, testing=False):
+    def __init__(self, num_gens, pop_size, tourn_size, hof_size, prob_cx, prob_mut, changes, songtitle='', testing=False):
 
         self.NGEN = num_gens
         self.POP_SIZE = pop_size
@@ -24,6 +24,7 @@ class GA:
         self.P_MUT = prob_mut
         self.CHANGES = changes
         self.TESTING = testing
+        self.SONG_TITLE = songtitle
 
         # Create toolbox
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -111,16 +112,18 @@ class GA:
         # 
         
         if not self.TESTING:
+            
+            best_bassline = hof[0]
+            # print(best_bassline)
+            # print(best_bassline.fitness.values)
+            
+            c_score = music.generate_composition(best_bassline, self.CHANGES, transpose=24)
+            music.generate_score(c_score, f'{self.SONG_TITLE}.png')
+            c_wav = music.generate_composition(best_bassline, self.CHANGES, transpose=-12)
+            music.create_wav_file(self.SONG_TITLE, c_wav)
 
             print('GA execution time:', time.time() - start_ga_time)
             
-            best_bassline = hof[0]
-            print(best_bassline)
-            print(best_bassline.fitness.values)
-            
-            c_score = music.generate_composition(best_bassline, self.CHANGES, transpose=24)
-            music.generate_score(c_score, 'goat.png')
-            c = music.generate_composition(best_bassline, self.CHANGES)
-            music.play_composition(c)
+            # music.play_composition(c)
 
         return avg_fit_of_gen
