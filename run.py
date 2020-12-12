@@ -6,6 +6,21 @@
 # Kevin McMahon
 # 
 
+'''
+Run this command in same directory as python files:
+
+    python run.py [filename]
+
+where filename is a text file in the subdirectory progressions:
+
+    blues.txt
+    blues7.txt
+    leaves.txt
+
+Testing results output in plots subdirectory. Music results will 
+appear as .mid, .wav, and .png in the current directory
+'''
+
 from ga import GA
 from progression import Progression
 import sys
@@ -132,7 +147,8 @@ test = False
 # 
 
 if run:
-    runner = Run(num_gens=500)
+    runner = Run()
+    # runner = Run(num_gens=1000)
     runner.one_run()
 
 # 

@@ -42,6 +42,18 @@ class GA:
         # self.toolbox.register("selectParents", tools.selBest, k=self.NUM_PARENTS)
         self.toolbox.register("selectSurvivors", tools.selBest, k=self.POP_SIZE)
 
+    def print_plot(self, best_inds):
+        '''
+        Print a plot of the list best_inds
+        '''
+        generations = [i+1 for i in range(len(best_inds))]
+        plt.plot(generations, best_inds)
+        plt.title(f'Average Fitness for {self.SONG_TITLE} by Generation')
+        plt.xlabel('Generation')
+        plt.ylabel('Fitness')
+        plt.grid(True)
+        plt.savefig(f'{self.SONG_TITLE}_plot.png')
+        plt.close()
 
     def run_GA(self):
         '''
@@ -115,7 +127,9 @@ class GA:
             
             best_bassline = hof[0]
             # print(best_bassline)
-            # print(best_bassline.fitness.values)
+            print(best_bassline.fitness.values)
+
+            self.print_plot(avg_fit_of_gen)
             
             c_score = music.generate_composition(best_bassline, self.CHANGES, transpose=24)
             music.generate_score(c_score, f'{self.SONG_TITLE}.png')

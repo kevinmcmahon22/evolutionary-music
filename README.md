@@ -15,6 +15,6 @@ Course project for CSE 848: Evolutionary Computation
 * run - starting point of system, can run tests on operators or generate sample basslines
 
 ### Subdirectories
-* music - .wav files and .png sheet music of samples evolved over 500 generations
+* figures - images and screenshots used in the formal report for this project
 * plots - tests comparing parent selection operators, mutation/crossover probabilities, and population size
 * progressions - input files with progressions to evolve basslines over
