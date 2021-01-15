@@ -1,7 +1,7 @@
 # Generating Basslines for a 12-bar Blues using Evolutionary Methods
 Course project for CSE 848: Evolutionary Computation
 
-**Project paper** -  `final_paper.pdf`
+**Project paper** -  (final_paper.pdf)[www.google.com]
 
 ### Software
 * FluidSynth - https://github.com/FluidSynth/fluidsynth/releases
